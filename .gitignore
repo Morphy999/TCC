@@ -149,7 +149,7 @@ credentials*.yaml
 node_modules/
 
 *.zip
-*.png
+*.png*
 *.jpg
 *.tif
 *.tiff
@@ -177,3 +177,11 @@ seasons/**/*.pkl
 *.error
 *.ipynb
 *.error
+*.db
+*.log*
+*.def
+colmap*
+*.ply*
+open3d*
+code/example/*
+reconstrucao*
