@@ -185,3 +185,4 @@ colmap*
 open3d*
 code/example/*
 reconstrucao*
+*.sh
