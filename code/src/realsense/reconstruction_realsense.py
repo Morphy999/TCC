@@ -4,7 +4,6 @@ import shutil
 import json
 from pathlib import Path
 from tqdm import tqdm
-import shutil
 
 # Configuração do parser de argumentos
 parser = argparse.ArgumentParser(description="Processamento de vídeo e reconstrução 3D.")

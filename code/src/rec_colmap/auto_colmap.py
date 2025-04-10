@@ -46,7 +46,9 @@ print(f"Copiando arquivos de {output_folder if not modo_imagem else entrada_path
 for file in (output_folder if not modo_imagem else entrada_path).glob('*'):
     shutil.copy(file, images_path)
     
-    
+import time
+
+start = time.time()
 
 print("iniciando SINGULARITY")
 singularity_container = "/homeLocal/walterbueno/TCC/colmap_cuda_80/"
@@ -60,5 +62,10 @@ subprocess.run([
     f"/container/reconstrucao/{teste}",
     f"/container/calibracao/{intrinsic_name}"
 ])
+
+end = time.time()
+
+print(f"Tempo total de execução: {end - start:.2f} segundos, ou {(end - start) / 60:.2f} minutos.")
+
 
 print("Processo completo.")

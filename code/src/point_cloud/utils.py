@@ -1,0 +1,50 @@
+import open3d as o3d
+import numpy as np
+from typing import List
+import rootutils
+
+root_path = rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
+from src.utils.timer_measure import timer_measure 
+
+
+@timer_measure
+def load_point_cloud(file_path):
+    """
+    Load a point cloud from a file.
+    :param file_path: Path to the point cloud file.
+    :return: Open3D point cloud object.
+    """
+    pcd = o3d.io.read_point_cloud(file_path)
+    print(f"Número de pontos na nuvem: {len(pcd.points)}")
+    return pcd
+
+def voxel_downsampling(pcd, voxel_size = 0.05):
+    
+    downpcd = pcd.voxel_down_sample(voxel_size=voxel_size)
+    return downpcd
+
+def visualize_point_cloud(pcd_list: List):
+    """
+    Visualize a point cloud using Open3D.
+    :param pcd: Open3D point cloud object.
+    """
+    o3d.visualization.draw_geometries(pcd_list)
+
+    
+def pcd_distance(pcd1, pcd2):
+    """
+    Compute the distance between two point clouds.
+    :param pcd1: First point cloud.
+    :param pcd2: Second point cloud.
+    :return: Distance between the two point clouds.
+    """
+    dists = pcd1.compute_point_cloud_distance(pcd2)
+    dists = np.asarray(dists)
+    ind = np.where(dists > 0.01)
+    
+    print(ind)
+    print("Number of points in pcd1 that are not in pcd2: ", len(ind[0]))
+    
+    return sum(dists) / len(dists)
+

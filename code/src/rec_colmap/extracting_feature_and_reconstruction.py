@@ -28,13 +28,16 @@ def add_camera_to_database(database_path, intrinsic_file, width, height, image_p
     camera = pycolmap.Camera.create(
         camera_id=1,  
         model=pycolmap.CameraModelId.PINHOLE,  
-        focal_length=fx,  
+        focal_length=np.mean([fx, fy]),  
         width=width,
         height=height
     )
     
     camera.principal_point_x = cx
     camera.principal_point_y = cy
+    
+    camera.focal_length_x = fx
+    camera.focal_length_y = fy
 
     camera_id = db.write_camera(camera)
 
@@ -110,7 +113,18 @@ def run(output_path, intrinsic_file):
         add_camera_to_database(database_path, intrinsic_file, width=1920, height=1080, image_paths=image_path) 
              
     print("extract features")
-    pycolmap.extract_features(database_path, image_path,device = pycolmap.Device(1))
+    
+    print("Device")
+    device = pycolmap.Device(1)
+    print(device.name) 
+    print(device.value) 
+
+    pycolmap.SiftMatchingOptions(
+        guided_matching = True,
+    )
+    
+    pycolmap.extract_features(database_path, image_path, device = device)
+    
     print("exhaustive match images")
     pycolmap.match_exhaustive(database_path)
 
@@ -125,9 +139,30 @@ def run(output_path, intrinsic_file):
     for idx, rec in recs.items():
         logging.info(f"#{idx} {rec.summary()}")
         
+    print("undistort images")
     pycolmap.undistort_images(mvs_path, sfm_path / '0', image_path)
-    pycolmap.patch_match_stereo(mvs_path)  
+    print("patch match stereo")
+    
+    
+    max_image_size = 20
+    pm_options = pycolmap.PatchMatchOptions(
+        max_image_size=max_image_size,
+        filter_min_num_consistent = max_image_size - 1
+    )
+
+    stereo_options = pycolmap.StereoFusionOptions(
+        max_time_image_size = max_image_size,
+    ) 
+
+    print("patch match stereo com opções customizadas")
+    pycolmap.patch_match_stereo(
+        workspace_path=mvs_path,
+        options=pm_options,
+    )
+    
+    print("refine depth")
     pycolmap.stereo_fusion(mvs_path / "fusion.ply", mvs_path)
+    print("saving fusion.ply")
     if pycolmap.poisson_meshing(mvs_path/"fusion.ply",mvs_path/'mesh.ply'):
         print("reconstruido com sucesso")
 
