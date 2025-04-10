@@ -1,56 +1,56 @@
 import argparse
-import shutil
-from pathlib import Path
-import enlighten
-import pycolmap
-import subprocess
-from pycolmap import logging
-import numpy as np
 import os
+import shutil
+import subprocess
+from pathlib import Path
+
+import enlighten
+import numpy as np
+import pycolmap
+from pycolmap import logging
+
 
 def add_camera_to_database(database_path, intrinsic_file, width, height, image_paths):
     print("Resetando banco de dados...")
 
-
     db_file = Path(database_path)
     if db_file.exists():
-        db_file.unlink()  
+        db_file.unlink()
     db = pycolmap.Database(database_path)
 
     print("Adicionando parâmetros intrínsecos da câmera ao banco de dados...")
 
-    
     K = np.loadtxt(intrinsic_file)
     fx, fy = K[0, 0], K[1, 1]  # Focal lengths
-    cx, cy = K[0, 2], K[1, 2]  
+    cx, cy = K[0, 2], K[1, 2]
 
     # Criar um objeto de câmera
     camera = pycolmap.Camera.create(
-        camera_id=1,  
-        model=pycolmap.CameraModelId.PINHOLE,  
-        focal_length=np.mean([fx, fy]),  
+        camera_id=1,
+        model=pycolmap.CameraModelId.PINHOLE,
+        focal_length=np.mean([fx, fy]),
         width=width,
-        height=height
+        height=height,
     )
-    
+
     camera.principal_point_x = cx
     camera.principal_point_y = cy
-    
+
     camera.focal_length_x = fx
     camera.focal_length_y = fy
 
     camera_id = db.write_camera(camera)
 
-    image_paths = list(image_paths.glob('*.jpg'))  
+    image_paths = list(image_paths.glob("*.jpg"))
 
     for path in image_paths:
         if path.exists():
             image = pycolmap.Image(
-                name=path.name,           
-                camera_id=camera_id,       
-                points2D=pycolmap.ListPoint2D(),  
+                name=path.name,
+                camera_id=camera_id,
+                points2D=pycolmap.ListPoint2D(),
             )
-            db.write_image(image)  
+            db.write_image(image)
         else:
             print(f"Imagem não encontrada: {path}")
 
@@ -59,16 +59,10 @@ def add_camera_to_database(database_path, intrinsic_file, width, height, image_p
     return camera_id
 
 
-
-
-
-
-def incremental_mapping_with_pbar(database_path, image_path, sfm_path): 
+def incremental_mapping_with_pbar(database_path, image_path, sfm_path):
     num_images = pycolmap.Database(database_path).num_images
     with enlighten.Manager() as manager:
-        with manager.counter(
-            total=num_images, desc="Images registered:"
-        ) as pbar:
+        with manager.counter(total=num_images, desc="Images registered:") as pbar:
             pbar.update(0, force=True)
             reconstructions = pycolmap.incremental_mapping(
                 database_path,
@@ -81,16 +75,12 @@ def incremental_mapping_with_pbar(database_path, image_path, sfm_path):
 
 
 def run(output_path, intrinsic_file):
-    
-    
-
     if intrinsic_file == "None" or not os.path.exists(intrinsic_file):
         print("⚠️ Nenhum arquivo de calibração foi fornecido. Continuando sem calibração.")
         intrinsic_file = None
     else:
         print("intrinsic file encontrado")
-        
-        
+
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
     print(f"Output path: {output_path}")
@@ -101,30 +91,32 @@ def run(output_path, intrinsic_file):
     mvs_path = output_path / "mvs"
 
     logging.set_log_destination(logging.INFO, output_path / "INFO.log")
-    
+
     if not image_path.exists():
         print("Image path does not exist:", image_path)
 
     if database_path.exists():
         database_path.unlink()
-        
+
     if intrinsic_file is not None:
         print("add camera intrinsic parameters to database")
-        add_camera_to_database(database_path, intrinsic_file, width=1920, height=1080, image_paths=image_path) 
-             
+        add_camera_to_database(
+            database_path, intrinsic_file, width=1920, height=1080, image_paths=image_path
+        )
+
     print("extract features")
-    
+
     print("Device")
     device = pycolmap.Device(1)
-    print(device.name) 
-    print(device.value) 
+    print(device.name)
+    print(device.value)
 
     pycolmap.SiftMatchingOptions(
-        guided_matching = True,
+        guided_matching=True,
     )
-    
-    pycolmap.extract_features(database_path, image_path, device = device)
-    
+
+    pycolmap.extract_features(database_path, image_path, device=device)
+
     print("exhaustive match images")
     pycolmap.match_exhaustive(database_path)
 
@@ -133,44 +125,52 @@ def run(output_path, intrinsic_file):
     sfm_path.mkdir(exist_ok=True)
 
     recs = incremental_mapping_with_pbar(database_path, image_path, sfm_path)
-    
-    print("-----------------------------------------------------reconstruction---------------------------------------------------------")
+
+    print(
+        "-----------------------------------------------------reconstruction---------------------------------------------------------"
+    )
 
     for idx, rec in recs.items():
         logging.info(f"#{idx} {rec.summary()}")
-        
+
     print("undistort images")
-    pycolmap.undistort_images(mvs_path, sfm_path / '0', image_path)
+    pycolmap.undistort_images(mvs_path, sfm_path / "0", image_path)
     print("patch match stereo")
-    
-    
+
     max_image_size = 20
     pm_options = pycolmap.PatchMatchOptions(
-        max_image_size=max_image_size,
-        filter_min_num_consistent = max_image_size - 1
+        max_image_size=max_image_size, filter_min_num_consistent=max_image_size - 1
     )
 
     stereo_options = pycolmap.StereoFusionOptions(
-        max_time_image_size = max_image_size,
-    ) 
+        max_time_image_size=max_image_size,
+    )
 
     print("patch match stereo com opções customizadas")
     pycolmap.patch_match_stereo(
         workspace_path=mvs_path,
         options=pm_options,
     )
-    
+
     print("refine depth")
     pycolmap.stereo_fusion(mvs_path / "fusion.ply", mvs_path)
     print("saving fusion.ply")
-    if pycolmap.poisson_meshing(mvs_path/"fusion.ply",mvs_path/'mesh.ply'):
+    if pycolmap.poisson_meshing(mvs_path / "fusion.ply", mvs_path / "mesh.ply"):
         print("reconstruido com sucesso")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run the script with an output path and optional camera intrinsics.")
+    parser = argparse.ArgumentParser(
+        description="Run the script with an output path and optional camera intrinsics."
+    )
     parser.add_argument("output_path", type=str, help="Path to the output directory")
-    parser.add_argument("intrinsic_path", type=str, nargs="?", default="None", help="Path to the camera intrinsic file (opcional)")
+    parser.add_argument(
+        "intrinsic_path",
+        type=str,
+        nargs="?",
+        default="None",
+        help="Path to the camera intrinsic file (opcional)",
+    )
 
     args = parser.parse_args()
 

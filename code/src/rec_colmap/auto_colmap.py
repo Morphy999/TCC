@@ -1,7 +1,8 @@
 import argparse
-import subprocess
 import shutil
+import subprocess
 from pathlib import Path
+
 import numpy as np
 
 # Configuração do parser de argumentos
@@ -42,26 +43,36 @@ if not modo_imagem:
     print("Executando o script de processamento de vídeo...")
     subprocess.run(["python3", "cut_video.py", str(entrada_path), str(output_folder), str(n)])
 
-print(f"Copiando arquivos de {output_folder if not modo_imagem else entrada_path} para {images_path}...")
-for file in (output_folder if not modo_imagem else entrada_path).glob('*'):
+print(
+    f"Copiando arquivos de {output_folder if not modo_imagem else entrada_path} para {images_path}..."
+)
+for file in (output_folder if not modo_imagem else entrada_path).glob("*"):
     shutil.copy(file, images_path)
-    
+
 import time
 
 start = time.time()
 
 print("iniciando SINGULARITY")
 singularity_container = "/homeLocal/walterbueno/TCC/colmap_cuda_80/"
-subprocess.run([
-    "singularity", "exec", "--nv",
-    "--bind", "/homeLocal/walterbueno/TCC/code/:/container/codigo",
-    "--bind", f"/homeLocal/walterbueno/TCC/reconstrucao/{teste}:/container/reconstrucao/{teste}",
-    "--bind", "/homeLocal/walterbueno/TCC/calibracao/:/container/calibracao",
-    singularity_container,
-    "python3", "/container/codigo/extracting_feature_and_reconstruction.py",
-    f"/container/reconstrucao/{teste}",
-    f"/container/calibracao/{intrinsic_name}"
-])
+subprocess.run(
+    [
+        "singularity",
+        "exec",
+        "--nv",
+        "--bind",
+        "/homeLocal/walterbueno/TCC/code/:/container/codigo",
+        "--bind",
+        f"/homeLocal/walterbueno/TCC/reconstrucao/{teste}:/container/reconstrucao/{teste}",
+        "--bind",
+        "/homeLocal/walterbueno/TCC/calibracao/:/container/calibracao",
+        singularity_container,
+        "python3",
+        "/container/codigo/extracting_feature_and_reconstruction.py",
+        f"/container/reconstrucao/{teste}",
+        f"/container/calibracao/{intrinsic_name}",
+    ]
+)
 
 end = time.time()
 
