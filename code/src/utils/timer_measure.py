@@ -15,7 +15,7 @@ def timer_measure(func):
         end_time = time.perf_counter()
         total_time = end_time - start_time
         func_name = snake2camelback(func.__name__)
-        print(f'{{"{func_name}Time": {total_time:.4f}}}')
+        print(f'{{"{func_name}Time": {total_time:.4f}}}s')
         return result
 
     return timer_measure_wrapper

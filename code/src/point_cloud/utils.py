@@ -1,3 +1,4 @@
+import copy
 from typing import List
 
 import numpy as np
@@ -32,6 +33,15 @@ def visualize_point_cloud(pcd_list: List):
     :param pcd: Open3D point cloud object.
     """
     o3d.visualization.draw_geometries(pcd_list)
+
+
+def draw_registration_result(source, target, transformation):
+    source_temp = copy.deepcopy(source)
+    target_temp = copy.deepcopy(target)
+    source_temp.paint_uniform_color([1, 0.706, 0])
+    target_temp.paint_uniform_color([0, 0.651, 0.929])
+    source_temp.transform(transformation)
+    visualize_point_cloud([source_temp, target_temp])
 
 
 def pcd_distance(pcd1, pcd2):

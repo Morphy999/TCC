@@ -21,6 +21,15 @@ class ICP:
             initial_transformation if initial_transformation is not None else np.identity(4)
         )
 
+    def get_params(self):
+        return {
+            "source": self.source,
+            "target": self.target,
+            "threshold": self.threshold,
+            "type": self.type,
+            "initial_transformation": self.initial_transformation,
+        }
+
     @timer_measure
     def execute(self):
         if self.type == "point_to_plane":
@@ -49,12 +58,7 @@ class ICP:
             raise ValueError("Invalid ICP type. Choose 'point_to_point' or 'point_to_plane'.")
 
     def draw_registration_result(self, transformation):
-        source_temp = copy.deepcopy(self.source)
-        target_temp = copy.deepcopy(self.target)
-        source_temp.paint_uniform_color([1, 0.706, 0])
-        target_temp.paint_uniform_color([0, 0.651, 0.929])
-        source_temp.transform(transformation)
-        pcd_utils.visualize_point_cloud([source_temp, target_temp])
+        pcd_utils.draw_registration_result(self.source, self.target, transformation)
 
 
 if __name__ == "__main__":
@@ -64,7 +68,9 @@ if __name__ == "__main__":
     path_pcd2 = r"C:\Users\EMC\Documents\GitHub\TCC_\fusion_harvard_intrinsicPointCloud.ply"
     pcd2 = pcd_utils.load_point_cloud(path_pcd2)
 
-    icp = ICP(pcd1, pcd2, threshold=0.02, type="point_to_plane")
+    icp = ICP(pcd1, pcd2, threshold=0.05, type="point_to_plane")
+
+    print("parametros do icp: ", icp.get_params())
 
     transformation = icp.execute()
 
