@@ -1,16 +1,9 @@
 import copy
 from typing import List
-
 import numpy as np
 import open3d as o3d
-import rootutils
-
-root_path = rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-
-from src.utils.timer_measure import timer_measure
 
 
-@timer_measure
 def load_point_cloud(file_path):
     """
     Load a point cloud from a file.
@@ -59,3 +52,28 @@ def pcd_distance(pcd1, pcd2):
     print("Number of points in pcd1 that are not in pcd2: ", len(ind[0]))
 
     return sum(dists) / len(dists)
+
+
+def save_transformed_point_cloud(source, transformation, output_path=None):
+    """
+    Save the transformed point cloud to a file.
+    
+    Args:
+        source: The source point cloud to transform and save
+        transformation: The transformation matrix to apply
+        output_path: Path to save the point cloud. If None, a default name will be generated.
+    
+    Returns:
+        The path where the point cloud was saved
+    """
+    transformed_pcd = source.clone()
+    transformed_pcd.transform(transformation)
+    
+    if output_path is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = f"transformed_pointcloud_{timestamp}.ply"
+    
+    o3d.io.write_point_cloud(output_path, transformed_pcd)
+    print(f"Transformed point cloud saved to: {output_path}")
+    
+    return output_path

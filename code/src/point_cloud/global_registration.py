@@ -1,9 +1,15 @@
 import open3d as o3d
+import os
+import sys
+
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
 import utils as pcd_utils
-from src.utils.timer_measure import timer_measure
 
 
-@timer_measure
 def preprocess_point_cloud(pcd, voxel_size):
     print(":: Downsample with a voxel size %.3f." % voxel_size)
     pcd_down = pcd_utils.voxel_downsampling(pcd, voxel_size)
@@ -22,8 +28,6 @@ def preprocess_point_cloud(pcd, voxel_size):
     return pcd_down, pcd_fpfh
 
 
-# RANSAC GLOBAL REGISTRATION
-@timer_measure
 def execute_global_registration(source_down, target_down, source_fpfh, target_fpfh, voxel_size):
     distance_threshold = voxel_size * 1.5
     print(":: RANSAC registration on downsampled point clouds.")
@@ -47,8 +51,6 @@ def execute_global_registration(source_down, target_down, source_fpfh, target_fp
     return result
 
 
-# FAST GLOBAL REGISTRATION
-@timer_measure
 def execute_fast_global_registration(
     source_down, target_down, source_fpfh, target_fpfh, voxel_size
 ):
