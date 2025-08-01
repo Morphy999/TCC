@@ -45,27 +45,3 @@ def run_pipeline(source, target, voxel_size=0.05, only_icp=False):
     print("transformation: ", transformation)
 
     return transformation
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Point cloud registration pipeline")
-    parser.add_argument("pcd1_path", type=str, help="Path to the first point cloud")
-    parser.add_argument("pcd2_path", type=str, help="Path to the second point cloud")
-    parser.add_argument(
-        "--voxel_size", type=float, default=0.05, help="Voxel size for downsampling"
-    )
-    parser.add_argument(
-        "--only_icp",
-        action="store_true",
-        help="Run only ICP registration without global registration",
-    )
-    parser.add_argument("--output", type=str, help="Path to save the transformed point cloud")
-
-    args = parser.parse_args()
-
-    pcd1 = pcd_utils.load_point_cloud(args.pcd1_path)
-    pcd2 = pcd_utils.load_point_cloud(args.pcd2_path)
-
-    transformation = run_pipeline(pcd1, pcd2, voxel_size=args.voxel_size, only_icp=args.only_icp)
-
-    save_transformed_point_cloud(pcd1, transformation, args.output)

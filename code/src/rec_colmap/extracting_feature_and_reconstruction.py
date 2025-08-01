@@ -7,10 +7,11 @@ from pathlib import Path
 import enlighten
 import numpy as np
 import pycolmap
+from PIL import Image
 from pycolmap import logging
 
 
-def add_camera_to_database(database_path, intrinsic_file, width, height, image_paths):
+def add_camera_to_database(database_path, intrinsic_file, image_dir, scale=1):
     print("Resetando banco de dados...")
 
     db_file = Path(database_path)
@@ -24,26 +25,43 @@ def add_camera_to_database(database_path, intrinsic_file, width, height, image_p
     fx, fy = K[0, 0], K[1, 1]
     cx, cy = K[0, 2], K[1, 2]
 
+    # Aplica o fator de escala aos parâmetros intrínsecos
+    fx *= scale
+    fy *= scale
+    cx *= scale
+    cy *= scale
+
+    # Assume que todas as imagens têm a mesma resolução após o redimensionamento
+    sample_image_path = next(Path(image_dir).glob("*.jpg"))
+    with Image.open(sample_image_path) as img:
+        new_width = int(img.width * scale)
+        new_height = int(img.height * scale)
+
     camera = pycolmap.Camera.create(
         camera_id=1,
         model=pycolmap.CameraModelId.PINHOLE,
         focal_length=np.mean([fx, fy]),
-        width=width,
-        height=height,
+        width=new_width,
+        height=new_height,
     )
 
     camera.principal_point_x = cx
     camera.principal_point_y = cy
-
     camera.focal_length_x = fx
     camera.focal_length_y = fy
 
     camera_id = db.write_camera(camera)
 
-    image_paths = list(image_paths.glob("*.jpg"))
+    print("Adicionando imagens ao banco de dados...")
+
+    image_paths = list(Path(image_dir).glob("*.jpg"))
 
     for path in image_paths:
         if path.exists():
+            with Image.open(path) as img:
+                resized = img.resize((new_width, new_height), Image.LANCZOS)
+                resized.save(path)
+
             image = pycolmap.Image(
                 name=path.name,
                 camera_id=camera_id,
@@ -73,7 +91,7 @@ def incremental_mapping_with_pbar(database_path, image_path, sfm_path):
     return reconstructions
 
 
-def run(output_path, intrinsic_file):
+def run(output_path, intrinsic_file, scale):
     if intrinsic_file == "None" or not os.path.exists(intrinsic_file):
         print("⚠️ Nenhum arquivo de calibração foi fornecido. Continuando sem calibração.")
         intrinsic_file = None
@@ -99,9 +117,7 @@ def run(output_path, intrinsic_file):
 
     if intrinsic_file is not None:
         print("add camera intrinsic parameters to database")
-        add_camera_to_database(
-            database_path, intrinsic_file, width=1920, height=1080, image_paths=image_path
-        )
+        add_camera_to_database(database_path, intrinsic_file, image_path, scale)
 
     print("extract features")
 
@@ -109,6 +125,11 @@ def run(output_path, intrinsic_file):
     device = pycolmap.Device(1)
     print(device.name)
     print(device.value)
+
+    sift_options = pycolmap.SiftExtractionOptions(
+        # estimate_affine_shape = True,
+        # domain_size_pooling = True,
+    )
 
     pycolmap.SiftMatchingOptions(
         guided_matching=True,
@@ -136,24 +157,23 @@ def run(output_path, intrinsic_file):
     pycolmap.undistort_images(mvs_path, sfm_path / "0", image_path)
     print("patch match stereo")
 
-    max_image_size = 20
-    pm_options = pycolmap.PatchMatchOptions(
-        max_image_size=max_image_size, filter_min_num_consistent=max_image_size - 1
-    )
+    max_image_size = -1
+
+    pm_options = pycolmap.PatchMatchOptions(max_image_size=max_image_size)
 
     stereo_options = pycolmap.StereoFusionOptions(
-        max_time_image_size=max_image_size,
+        max_image_size=max_image_size,
     )
 
     print("patch match stereo com opções customizadas")
-    pycolmap.patch_match_stereo(
-        workspace_path=mvs_path,
-        options=pm_options,
-    )
+    pycolmap.patch_match_stereo(workspace_path=mvs_path, options=pm_options)
 
     print("refine depth")
-    pycolmap.stereo_fusion(mvs_path / "fusion.ply", mvs_path)
+
+    pycolmap.stereo_fusion(mvs_path / "fusion.ply", mvs_path, options=stereo_options)
+
     print("saving fusion.ply")
+
     if pycolmap.poisson_meshing(mvs_path / "fusion.ply", mvs_path / "mesh.ply"):
         print("reconstruido com sucesso")
 
@@ -170,7 +190,10 @@ if __name__ == "__main__":
         default="None",
         help="Path to the camera intrinsic file (opcional)",
     )
+    parser.add_argument("--scale", type=str, help="Scale factor for the images")
 
     args = parser.parse_args()
 
-    run(args.output_path, args.intrinsic_path)
+    scale = float(args.scale)
+
+    run(args.output_path, args.intrinsic_path, scale)

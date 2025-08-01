@@ -42,18 +42,3 @@ def detect_changes_with_heatmap(pcd_path1, pcd_path2, threshold=0.3):
     pcd1.colors = o3d.utility.Vector3dVector(colors)
 
     return pcd1
-
-
-if __name__ == "__main__":
-    pcd1_path = r"C:\Users\EMC\Documents\TCC arquivos\Sala Lab\sala_cut3r_transformed_icp.ply"
-    pcd2_path = r"C:\Users\EMC\Documents\TCC arquivos\Sala Lab\sala_cut3r_clean.ply"
-
-    threshold = 0.3
-    heatmap_pcd = detect_changes_with_heatmap(pcd1_path, pcd2_path, threshold=threshold)
-
-    o3d.io.write_point_cloud(
-        r"C:\Users\EMC\Documents\TCC arquivos\Sala Lab\heatmap_change_pcd_cut3r_{}.ply".format(
-            threshold
-        ),
-        heatmap_pcd,
-    )

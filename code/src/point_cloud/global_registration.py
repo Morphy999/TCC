@@ -89,17 +89,3 @@ def run_fast_global_registration(source, target, voxel_size=0.05):
     )
 
     return result
-
-
-if __name__ == "__main__":
-    path_pcd1 = r"C:\Users\EMC\Documents\GitHub\TCC_\fusion_harvardPointCloud.ply"
-    pcd1 = pcd_utils.load_point_cloud(path_pcd1)
-
-    path_pcd2 = r"C:\Users\EMC\Documents\GitHub\TCC_\fusion_harvard_intrinsicPointCloud.ply"
-    pcd2 = pcd_utils.load_point_cloud(path_pcd2)
-
-    result = run_global_registration(pcd1, pcd2)
-
-    print(result)
-
-    pcd_utils.draw_registration_result(pcd1, pcd2, result.transformation)
