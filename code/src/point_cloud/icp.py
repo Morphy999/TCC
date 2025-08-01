@@ -65,21 +65,3 @@ class ICP:
 
     def draw_registration_result(self, transformation):
         pcd_utils.draw_registration_result(self.source, self.target, transformation)
-
-
-# if __name__ == "__main__":
-#     path_pcd1 = r"C:\Users\EMC\Documents\GitHub\TCC_\fusion_harvardPointCloud.ply"
-#     pcd1 = pcd_utils.load_point_cloud(path_pcd1)
-
-#     path_pcd2 = r"C:\Users\EMC\Documents\GitHub\TCC_\fusion_harvard_intrinsicPointCloud.ply"
-#     pcd2 = pcd_utils.load_point_cloud(path_pcd2)
-
-#     icp = ICP(pcd1, pcd2, threshold=0.05, type="point_to_plane")
-
-#     print("parametros do icp: ", icp.get_params())
-
-#     transformation = icp.execute()
-
-#     print("Transformation Matrix:\n", transformation)
-
-#     icp.draw_registration_result(transformation)
