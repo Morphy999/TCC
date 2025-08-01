@@ -126,11 +126,6 @@ def run(output_path, intrinsic_file, scale):
     print(device.name)
     print(device.value)
 
-    sift_options = pycolmap.SiftExtractionOptions(
-        # estimate_affine_shape = True,
-        # domain_size_pooling = True,
-    )
-
     pycolmap.SiftMatchingOptions(
         guided_matching=True,
     )

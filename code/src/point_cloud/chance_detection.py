@@ -21,17 +21,3 @@ def detect_changes(pcd_path1, pcd_path2, threshold=0.3):
         return change_pcd
     else:
         return None
-
-
-if __name__ == "__main__":
-    pcd1_path = r"C:\Users\EMC\Documents\TCC arquivos\Sala Lab\fusion_sala_clean_finalized_transformed_icp_ASCII.ply"
-    pcd2_path = r"C:\Users\EMC\Documents\TCC arquivos\Sala Lab\fusion_sala_chance_clean_finalized_ASCII.ply"
-    change_pcd = detect_changes(pcd2_path, pcd1_path)
-
-    if change_pcd is not None:
-        print(f"Found {len(change_pcd.points)} changed points")
-        o3d.io.write_point_cloud(
-            r"C:\Users\EMC\Documents\TCC arquivos\Sala Lab\change_pcd.ply", change_pcd
-        )
-    else:
-        print("No changes found")
