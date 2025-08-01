@@ -1,5 +1,6 @@
 import copy
 from typing import List
+
 import numpy as np
 import open3d as o3d
 
@@ -54,26 +55,35 @@ def pcd_distance(pcd1, pcd2):
     return sum(dists) / len(dists)
 
 
-def save_transformed_point_cloud(source, transformation, output_path=None):
+def save_transformed_point_cloud(pcd, transformation, output_path):
     """
     Save the transformed point cloud to a file.
-    
-    Args:
-        source: The source point cloud to transform and save
-        transformation: The transformation matrix to apply
-        output_path: Path to save the point cloud. If None, a default name will be generated.
-    
-    Returns:
-        The path where the point cloud was saved
+    :param pcd: Open3D point cloud object.
+    :param transformation: Transformation matrix.
+    :param output_path: Path to save the point cloud.
     """
-    transformed_pcd = source.clone()
-    transformed_pcd.transform(transformation)
-    
-    if output_path is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = f"transformed_pointcloud_{timestamp}.ply"
-    
-    o3d.io.write_point_cloud(output_path, transformed_pcd)
-    print(f"Transformed point cloud saved to: {output_path}")
-    
-    return output_path
+    pcd_transformed = copy.deepcopy(pcd)
+    pcd_transformed.transform(transformation)
+    o3d.io.write_point_cloud(output_path, pcd_transformed)
+    print(f"Transformed point cloud saved to {output_path}")
+
+
+def scale_point_cloud(source, target):
+    """
+    Scale a point cloud by a given factor.
+    :param pcd: Open3D point cloud object.
+    :param scale_factor: Scale factor.
+    :return: Scaled point cloud.
+    """
+
+    source_bb = source.get_axis_aligned_bounding_box()
+    target_bb = target.get_axis_aligned_bounding_box()
+
+    source_scale = np.linalg.norm(source_bb.get_extent())
+    target_scale = np.linalg.norm(target_bb.get_extent())
+
+    scale_factor = target_scale / source_scale
+
+    source_scaled = source.scale(scale_factor, center=source_bb.get_center())
+
+    return source_scaled

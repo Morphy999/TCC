@@ -21,10 +21,9 @@ def add_camera_to_database(database_path, intrinsic_file, width, height, image_p
     print("Adicionando parâmetros intrínsecos da câmera ao banco de dados...")
 
     K = np.loadtxt(intrinsic_file)
-    fx, fy = K[0, 0], K[1, 1]  # Focal lengths
+    fx, fy = K[0, 0], K[1, 1]
     cx, cy = K[0, 2], K[1, 2]
 
-    # Criar um objeto de câmera
     camera = pycolmap.Camera.create(
         camera_id=1,
         model=pycolmap.CameraModelId.PINHOLE,

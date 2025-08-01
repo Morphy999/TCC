@@ -1,13 +1,12 @@
-import open3d as o3d
 import os
 import sys
 
-parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import open3d as o3d
+import rootutils
 
-if parent_dir not in sys.path:
-    sys.path.append(parent_dir)
+root_path = rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
-import utils as pcd_utils
+import src.point_cloud.utils as pcd_utils
 
 
 def preprocess_point_cloud(pcd, voxel_size):
@@ -88,6 +87,8 @@ def run_fast_global_registration(source, target, voxel_size=0.05):
     result = execute_fast_global_registration(
         source_down, target_down, source_fpfh, target_fpfh, voxel_size
     )
+
+    return result
 
 
 if __name__ == "__main__":
